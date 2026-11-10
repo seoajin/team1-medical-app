@@ -1,0 +1,63 @@
+rules_version = '2';
+
+// 서해보건ON 보안 규칙
+// Firebase 콘솔 → Firestore Database → 규칙(Rules) 탭에 이 내용을 통째로 붙여 넣고 "게시"를 눌러 주세요.
+// ⚠️ 아래 teacher@seohae-on.app 를 config.js 의 teacherEmail 과 똑같이 바꿔 주세요.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isTeacher() { return signedIn() && request.auth.token.email == 'teacher@seohae-on.app'; }
+    function isOwner() { return signedIn() && resource.data.uid == request.auth.uid; }
+    function shortText(v, min, max) { return v is string && v.size() >= min && v.size() <= max; }
+
+    // 보건실 상황 (선생님 상태·메모·사용 중인 침대) — 누구나 보고, 선생님만 바꿔요
+    match /public/status {
+      allow read: if true;
+      allow write: if isTeacher();
+    }
+
+    // 침대 사용 요청 — 증상이 들어 있어서 본인과 선생님만 봐요
+    match /bedRequests/{id} {
+      allow read: if isTeacher() || isOwner();
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.keys().hasOnly(['uid', 'studentNo', 'name', 'symptom', 'status', 'time', 'date'])
+        && shortText(request.resource.data.studentNo, 5, 5)
+        && shortText(request.resource.data.name, 2, 10)
+        && shortText(request.resource.data.symptom, 5, 150);
+      // 학생은 "알림 봤어요" 표시만 바꿀 수 있어요
+      allow update: if isTeacher()
+        || (isOwner() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['studentAlerted']));
+      // 학생은 아직 확인 전인 요청만 취소할 수 있어요
+      allow delete: if isTeacher() || (isOwner() && resource.data.status == 'pending');
+    }
+
+    // 오늘 예약 순서 — 이름·증상 없이 순서만 공개
+    match /reservations/{id} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'waiting'
+        && request.resource.data.keys().hasOnly(['uid', 'date', 'slot', 'status', 'createdAt'])
+        && request.resource.data.slot is int && request.resource.data.slot >= 0 && request.resource.data.slot <= 5;
+      allow update: if isTeacher();
+      allow delete: if isTeacher() || (isOwner() && resource.data.status == 'waiting');
+    }
+
+    // 예약한 학생 정보(학번·이름·증상·처치 내용) — 본인과 선생님만
+    match /reservationInfo/{id} {
+      allow read: if isTeacher() || isOwner();
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'date', 'slot', 'studentNo', 'name', 'symptom', 'createdAt'])
+        && shortText(request.resource.data.studentNo, 5, 5)
+        && shortText(request.resource.data.name, 2, 10)
+        && shortText(request.resource.data.symptom, 1, 30);
+      allow update: if isTeacher();
+      allow delete: if isTeacher() || (isOwner() && !('doneAt' in resource.data));
+    }
+  }
+}

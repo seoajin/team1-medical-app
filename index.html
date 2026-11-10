@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>서해보건ON</title>
+  <meta name="description" content="보건실 실시간 현황, 예약, 침대 사용 요청, 자가 응급처치 영상">
+  <meta name="theme-color" content="#d6457f">
+  <!-- 휴대폰 홈 화면에 추가하면 앱처럼 열려요 -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icons/favicon.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="서해보건ON">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ===== 1. 맨 위: 제목 ===== -->
+  <header class="top">
+    <div class="wrap top-inner">
+      <div class="logo">
+        <span class="logo-icon">🏥</span>
+        <div>
+          <h1>서해보건ON</h1>
+          <p class="slogan" id="slogan">기다리지 말고, 확인하고, 예약하세요</p>
+        </div>
+      </div>
+      <div class="top-right">
+        <nav class="mode" aria-label="모드 바꾸기">
+          <button class="on" data-mode="student" aria-pressed="true">🎒 학생용</button>
+          <button data-mode="teacher" aria-pressed="false">🧑‍⚕️ 선생님용</button>
+        </nav>
+        <button class="me" id="meBtn" aria-label="내 정보 바꾸기">👤 내 정보 입력</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================== 🎒 학생용 화면 ===================== -->
+  <main class="wrap" id="studentView">
+
+    <!-- ===== 사용법 영상 ===== -->
+    <section class="guide" id="guide" aria-label="서해보건ON 사용법 영상" hidden></section>
+
+    <!-- ===== 2. 지금 보건실 상황 (실시간 현황) ===== -->
+    <section class="status" id="status" aria-label="지금 보건실 상황">
+      <div class="status-head">
+        <h2>📡 지금 보건실은?</h2>
+        <span class="updated" id="updated">불러오는 중…</span>
+      </div>
+      <div class="status-grid">
+        <div class="stat">
+          <div class="stat-label">보건 선생님</div>
+          <div class="stat-value teacher" id="teacher"><span class="dot"></span>-</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">현재 예약자 수</div>
+          <div class="stat-value"><span id="waiting">-</span>명</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">빈 침대</div>
+          <div class="stat-value"><span id="beds">-</span> / <span id="bedsTotal">-</span>개</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">예상 대기 시간</div>
+          <div class="stat-value">약 <span id="waitTime">-</span>분</div>
+        </div>
+      </div>
+      <p class="teacher-memo" id="teacherMemo" hidden></p>
+    </section>
+
+    <!-- ===== 3. 핵심 기능 4가지 ===== -->
+    <section aria-label="핵심 기능">
+      <h2 class="section-title">무엇을 도와줄까요?</h2>
+      <div class="features">
+        <button class="feature f-status" data-action="status">
+          <span class="f-icon">📊</span>
+          <span class="f-name">실시간 현황</span>
+          <span class="f-desc">오늘 예약 순서 보기</span>
+        </button>
+        <button class="feature f-reserve" data-action="reserve">
+          <span class="f-icon">📅</span>
+          <span class="f-name">보건실 예약</span>
+          <span class="f-desc">쉬는 시간을 골라 미리 예약</span>
+        </button>
+        <button class="feature f-video" data-action="video">
+          <span class="f-icon">🎬</span>
+          <span class="f-name">응급처치 영상</span>
+          <span class="f-desc">쌤이 바쁠 때 혼자서 따라 하기</span>
+        </button>
+        <button class="feature f-pass" data-action="pass">
+          <span class="f-icon">📱</span>
+          <span class="f-name">전자 보건확인증</span>
+          <span class="f-desc">종이 확인증 안 써도 돼요</span>
+        </button>
+      </div>
+
+      <!-- 내 예약 -->
+      <div class="my-resv" id="myResv" hidden></div>
+
+      <!-- 침대 사용 요청 -->
+      <button class="bed-cta" id="bedCta">
+        <span class="f-icon">🛏️</span>
+        <span>
+          <b>침대 사용 요청하기</b>
+          <span>누워서 쉬어야 할 것 같으면 증상을 적고 요청하세요</span>
+        </span>
+        <span class="arrow">›</span>
+      </button>
+      <div class="bed-status" id="bedStatus" hidden></div>
+    </section>
+
+    <!-- ===== 4. 자가 응급처치 영상 ===== -->
+    <section id="videos" aria-label="자가 응급처치 영상">
+      <h2 class="section-title">🎬 자가 응급처치 영상 <small>눌러서 재생해 보세요</small></h2>
+      <div class="videos" id="videoList"><!-- script.js가 채워요 --></div>
+    </section>
+
+    <!-- ===== 5. 안내 ===== -->
+    <section class="warning">
+      🚨 숨쉬기 힘들거나, 의식이 흐리거나, 피가 멈추지 않으면 영상 보지 말고
+      <b>바로 가까운 선생님께 알리거나 119</b>에 전화하세요.
+    </section>
+
+    <p class="note conn-note" data-conn></p>
+  </main>
+
+  <!-- ===================== 🧑‍⚕️ 선생님용 화면 ===================== -->
+  <main class="wrap" id="teacherView" hidden>
+
+    <!-- ===== 침대 사용 요청 ===== -->
+    <section class="panel" id="bedPanel">
+      <div class="panel-head">
+        <h2>🛏️ 침대 사용 요청 <span class="count" id="pendingCount" hidden>0</span></h2>
+        <span class="bed-free">빈 침대 <b id="tBedFree">-</b> / <span id="tBedTotal">-</span>개</span>
+      </div>
+      <p class="hint">학생이 적은 증상을 보고 허용 또는 거부를 눌러 주세요. 허용하면 <span id="limitText">1시간</span> 동안 쓸 수 있어요.</p>
+      <div id="cleanList"><!-- 시간이 지난 침대 정리 요청 --></div>
+      <div id="requestList"></div>
+
+      <h3>지금 침대를 쓰는 학생</h3>
+      <div id="usingList"></div>
+    </section>
+
+    <!-- ===== 오늘 예약 ===== -->
+    <section class="panel" id="resvPanel">
+      <div class="panel-head">
+        <h2>📅 오늘 예약 <span class="count" id="resvCount" hidden>0</span></h2>
+      </div>
+      <p class="hint">예약한 학생 명단이에요. 진료가 끝나면 "진료 완료"를 눌러 주세요. 학생 휴대폰에 <b>예약 시간 ~ 진료 완료 시간</b>이 적힌 전자 보건확인증이 바로 생겨요.</p>
+      <div id="resvList"></div>
+    </section>
+
+    <!-- ===== 내 상태 바꾸기 ===== -->
+    <section class="panel">
+      <h2>🙋 지금 선생님은 어디에 계세요?</h2>
+      <p class="hint">누르면 학생 화면에 바로 보여요.</p>
+      <div class="state-grid" id="stateGrid"><!-- teacher.js가 채워요 --></div>
+      <p class="changed" id="changed"></p>
+    </section>
+
+    <!-- ===== 학생에게 남길 메모 ===== -->
+    <section class="panel">
+      <h2>💬 학생들에게 한마디 <small style="font-size:18px;font-weight:400;color:var(--muted)">(안 써도 돼요)</small></h2>
+      <p class="hint">눌러서 고르거나 직접 써 주세요.</p>
+      <div class="chips" id="chips"></div>
+      <div class="memo-row">
+        <input id="memoInput" type="text" maxlength="40" placeholder="예) 10분 뒤에 돌아와요" aria-label="학생에게 남길 메모">
+        <button class="big-btn" id="memoSave">저장</button>
+      </div>
+      <button class="ghost-btn" id="memoClear">메모 지우기</button>
+    </section>
+
+    <!-- ===== 학생 화면 미리보기 ===== -->
+    <section class="panel">
+      <h2>👀 학생들에게는 이렇게 보여요</h2>
+      <div class="stat preview">
+        <div class="stat-label">보건 선생님</div>
+        <div class="stat-value teacher" id="previewState"></div>
+      </div>
+      <p class="teacher-memo preview" id="previewMemo" hidden></p>
+    </section>
+
+    <!-- ===== 암호 바꾸기 ===== -->
+    <section class="panel">
+      <h2>🔑 선생님 모드 암호 바꾸기</h2>
+      <p class="hint">숫자 4~8자리로 정해 주세요. 바꾼 뒤에는 새 암호로 들어와야 해요.</p>
+      <div class="pin-form">
+        <label>지금 암호<input type="password" inputmode="numeric" maxlength="8" id="pinNow" autocomplete="off"></label>
+        <label>새 암호<input type="password" inputmode="numeric" maxlength="8" id="pinNew" autocomplete="off"></label>
+        <label>새 암호 한 번 더<input type="password" inputmode="numeric" maxlength="8" id="pinNew2" autocomplete="off"></label>
+      </div>
+      <p class="pin-msg" id="pinChangeMsg"></p>
+      <button class="big-btn" id="pinChangeBtn">암호 바꾸기</button>
+    </section>
+
+    <button class="lock-btn" id="lockBtn">🔒 잠그고 학생용으로 돌아가기</button>
+
+    <p class="note conn-note" data-conn></p>
+  </main>
+
+  <!-- ===== 팝업: 내 정보 (학번·이름) ===== -->
+  <div class="modal" id="meModal" hidden>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="meTitle">
+      <div class="modal-head">
+        <h2 id="meTitle">👤 내 정보</h2>
+        <button class="close" data-close aria-label="닫기">✕</button>
+      </div>
+      <p class="small" style="margin-top:0">예약이나 침대 요청을 하면 보건 선생님이 누구인지 알 수 있게 적어 주세요. 다른 학생에게는 보이지 않아요.</p>
+      <div class="me-form">
+        <label>학번 <small>(예: 1학년 3반 5번 → 10305)</small>
+          <input id="meNo" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="10305">
+        </label>
+        <label>이름
+          <input id="meName" type="text" maxlength="10" autocomplete="off" placeholder="이름">
+        </label>
+      </div>
+      <p class="pin-msg" id="meMsg"></p>
+      <button class="big-btn" id="meSave">저장</button>
+    </div>
+  </div>
+
+  <!-- ===== 팝업: 알림 (침대 시간 끝 / 침대 정리 요청) ===== -->
+  <div class="modal" id="alertModal" hidden>
+    <div class="modal-box alert-box" role="alertdialog" aria-modal="true" aria-labelledby="alertTitle">
+      <div class="alert-icon" id="alertIcon">⏰</div>
+      <h2 id="alertTitle">알림</h2>
+      <p id="alertText"></p>
+      <div class="alert-actions" id="alertActions"></div>
+    </div>
+  </div>
+
+  <!-- ===== 팝업: 선생님 모드 암호 ===== -->
+  <div class="modal" id="pinModal" hidden>
+    <div class="modal-box pin-box" role="dialog" aria-modal="true" aria-labelledby="pinTitle">
+      <div class="modal-head">
+        <h2 id="pinTitle">🔒 선생님 모드</h2>
+        <button class="close" data-close aria-label="닫기">✕</button>
+      </div>
+      <p class="small" style="margin-top:0">선생님만 들어갈 수 있어요. 암호를 눌러 주세요.</p>
+      <div class="pin-dots" id="pinDots" aria-live="polite"></div>
+      <p class="pin-msg" id="pinMsg"></p>
+      <div class="keypad" id="keypad">
+        <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+        <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+        <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+        <button data-k="del" aria-label="한 글자 지우기">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 팝업: 영상 플레이어 ===== -->
+  <div class="modal" id="videoModal" hidden>
+    <div class="modal-box player" role="dialog" aria-modal="true" aria-labelledby="playerTitle">
+      <div class="modal-head">
+        <h2 id="playerTitle">영상 제목</h2>
+        <button class="close" data-close aria-label="닫기">✕</button>
+      </div>
+      <div id="playerBody"><!-- script.js가 채워요 --></div>
+    </div>
+  </div>
+
+  <!-- ===== 팝업: 실시간 현황 자세히 ===== -->
+  <div class="modal" id="statusModal" hidden>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="statusTitle">
+      <div class="modal-head">
+        <h2 id="statusTitle">📊 오늘 예약 순서</h2>
+        <button class="close" data-close aria-label="닫기">✕</button>
+      </div>
+      <ul class="queue" id="queueList"></ul>
+      <p class="small">개인정보 보호를 위해 다른 학생의 이름과 증상은 보이지 않아요.</p>
+      <button class="big-btn" data-close>확인</button>
+    </div>
+  </div>
+
+  <!-- ===== 팝업: 예약 ===== -->
+  <div class="modal" id="reserveModal" hidden>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="reserveTitle">
+      <div class="modal-head">
+        <h2 id="reserveTitle">📅 보건실 예약</h2>
+        <button class="close" data-close aria-label="닫기">✕</button>
+      </div>
+      <div id="reserveForm">
+        <p class="small" style="margin-top:0">오늘 예약만 할 수 있어요. 예약한 시간에 보건실로 오세요.</p>
+        <h3>① 학번과 이름을 적어 주세요</h3>
+        <div class="me-form two">
+          <label>학번 <small>(예: 10305)</small>
+            <input id="resvNo" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="10305">
+          </label>
+          <label>이름
+            <input id="resvName" type="text" maxlength="10" autocomplete="off" placeholder="이름">
+          </label>
+        </div>
+        <h3>② 언제 갈까요?</h3>
+        <div class="choices" id="slotList"></div>
+        <h3>③ 어디가 불편해요?</h3>
+        <div class="choices" id="symptomList"></div>
+        <p class="pin-msg" id="resvMsg"></p>
+        <button class="big-btn" id="reserveBtn" disabled>예약하기</button>
+      </div>
+      <div id="reserveDone" class="done" hidden>
+        <div class="done-icon">✅</div>
+        <p class="done-title">예약 완료!</p>
+        <p id="reserveSummary"></p>
+        <button class="big-btn" data-close>확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 팝업: 전자 보건확인증 ===== -->
+  <div class="modal" id="passModal" hidden>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="passTitle">
+      <div class="modal-head">
+        <h2 id="passTitle">📱 전자 보건확인증</h2>
+        <button class="close" data-close aria-label="닫기">✕</button>
+      </div>
+      <div id="passBody"><!-- script.js가 채워요 --></div>
+      <button class="big-btn" data-close>확인</button>
+    </div>
+  </div>
+
+  <!-- ===== 팝업: 침대 사용 요청 ===== -->
+  <div class="modal" id="bedModal" hidden>
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="bedTitle">
+      <div class="modal-head">
+        <h2 id="bedTitle">🛏️ 침대 사용 요청</h2>
+        <button class="close" data-close aria-label="닫기">✕</button>
+      </div>
+      <p class="small" style="margin-top:0">지금 빈 침대: <b id="bedFreeInModal">-</b>개</p>
+      <h3 style="margin-top:0">어디가, 언제부터, 어떻게 아픈지 적어 주세요 <span class="req">(꼭 적어야 해요)</span></h3>
+      <textarea id="symptomInput" maxlength="150" rows="4"
+        placeholder="예) 3교시부터 머리가 아프고 어지러워요. 아침을 안 먹었어요."></textarea>
+      <p class="counter" id="symptomCount">5글자 이상 적어 주세요 (0 / 150)</p>
+      <button class="big-btn" id="bedSubmit" disabled>요청 보내기</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="db.js"></script>
+  <script src="shared.js"></script>
+  <script src="videos.js"></script>
+  <script src="script.js"></script>
+  <script src="teacher.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "서해보건ON",
+  "short_name": "서해보건ON",
+  "description": "보건실 실시간 현황, 예약, 침대 사용 요청, 자가 응급처치 영상",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f8fb",
+  "theme_color": "#d6457f",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
